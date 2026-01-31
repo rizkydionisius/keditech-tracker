@@ -46,33 +46,25 @@ export default function UpdateProgressModal({
   if (!isOpen) return null;
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // Added error state
 
-  // Helper to get Supabase client
-  // We need to import it first, but I'll add the import at the top in a separate change if needed, 
-  // or I can assume it's available or use the window object if I really had to, but best to import.
-  // Wait, I cannot add imports with this tool if they are not in the block.
-  // I will skip the import for now and add it in a second step or rely on the user to have it? No, I must add it.
-  // I'll rewrite the whole file's top section or just use a multi-replace to add the import separately.
-  // Actually, I can use replace_file_content for the import and effective logic.
-  
-  // Let's assume supabase is imported from '@/utils/supabase/client';
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!project.trim()) return;
 
     setLoading(true);
+    setError(null);
 
     try {
         // 1. Check Auth
         const { data: { user } } = await supabase.auth.getUser();
         if (!user || !user.email) {
-            alert("User not logged in");
+            alert("Please log in first.");
             setLoading(false);
             return;
         }
 
-        // 2. Find Member ID
+        // 2. Member Lookup (Crucial Step)
         const { data: memberData, error: memberError } = await supabase
             .from('team_members')
             .select('id, name, email')
@@ -80,53 +72,53 @@ export default function UpdateProgressModal({
             .single();
 
         if (memberError || !memberData) {
-            console.error(memberError);
-            alert("PROFILE NOT FOUND. Please ensure your email (" + user.email + ") exists in the 'team_members' table.");
+            alert("PROFILE NOT FOUND! \n\nWe looked for email: " + user.email + "\nBut found no match in 'team_members' table.\n\nPlease run the SQL script to map your email.");
             setLoading(false);
             return;
         }
 
-        // 3. Insert Project (if exists)
+        // 3. Insert Logic
+        // Insert into projects
         if (project) {
             const { error: projectError } = await supabase
                 .from('projects')
                 .insert({
-                    member_id: memberData.id,
+                    member_id: memberData.id, // Use memberData.id, NOT auth user.id
                     name: project,
                     status: status,
-                    description: narrative, // using narrative as description? or just context
-                    month: date.slice(0, 7) // YYYY-MM
+                    description: narrative,
+                    month: date.slice(0, 7)
                 });
             
             if (projectError) throw projectError;
         }
 
-        // 4. Insert KPI (if provided)
-        if (kpiValue && kpiLabel) {
+        // Insert into monthly_kpis
+        if (kpiValue) {
+             // Assuming kpiLabel is also needed, handling based on previous context or requirements. 
+             // The prompt emphasizes "Insert into monthly_kpis if kpiValue is not empty".
              const { error: kpiError } = await supabase
                 .from('monthly_kpis')
                 .insert({
                     member_id: memberData.id,
                     month: date.slice(0, 7),
                     kpi_reached: Number(kpiValue),
-                    kpi_target: Number(kpiValue) + 10, // Mock target logic or should be input? sticking to request
-                    note: kpiLabel // Storing label as note or separate field?
-                    // Wait, schema might not have kpi_label.
-                    // Let's assume strict requested logic: "Insert KPI: If kpiValue is present..."
+                    kpi_target: Number(kpiValue) + 10, // Default/Mock logic from previous step
+                    note: kpiLabel || "Update" // Use label or default
                 });
-             // Actually, looking at previous schema, we have kpi tables.
-             // I'll stick to the user's specific request logic to "insert into monthly_kpis table"
+
              if (kpiError) throw kpiError;
         }
 
-        alert("Success! Data saved.");
+        // 4. Success Handling
+        alert("✅ Data Saved Successfully!");
         onClose();
-        // Ideally trigger refresh here
         window.location.reload(); 
 
-    } catch (error: any) {
-        console.error('Save Error:', error);
-        alert(error.message || "Failed to save progress.");
+    } catch (err: any) {
+        console.error(err);
+        alert("Error Saving: " + err.message);
+        setError(err.message);
     } finally {
         setLoading(false);
     }
