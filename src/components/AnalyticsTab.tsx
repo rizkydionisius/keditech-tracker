@@ -17,38 +17,39 @@ export default function AnalyticsTab({ currentMonth, users }: AnalyticsTabProps)
   const [aiSummary, setAiSummary] = useState("");
   const [isAnalysing, setIsAnalysing] = useState(false);
 
-  // Generate Insight on Mount
-  useEffect(() => {
-    const generateInsight = async () => {
-        if (users.length === 0) return;
+  // Manual Trigger
+  const handleGenerateSummary = async () => {
+    if (users.length === 0) {
+        alert("No data available to analyze yet.");
+        return;
+    }
 
-        setIsAnalysing(true);
-        try {
-            // Prepare lightweight data payload for AI
-            const payload = users.map(u => ({
-                name: u.name,
-                role: u.role,
-                kpi: u.reports[currentMonth]?.kpi,
-                active_projects: u.reports[currentMonth]?.projects?.length
-            }));
+    setIsAnalysing(true);
+    setAiSummary(""); // Clear previous if any
 
-            const res = await fetch('/api/ai-summary', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: payload })
-            });
-            const json = await res.json();
-            setAiSummary(json.summary);
-        } catch (e) {
-            console.error(e);
-            setAiSummary("Could not generate insight at this time.");
-        } finally {
-            setIsAnalysing(false);
-        }
-    };
+    try {
+        // Prepare lightweight data payload for AI
+        const payload = users.map(u => ({
+            name: u.name,
+            role: u.role,
+            kpi: u.reports[currentMonth]?.kpi,
+            active_projects: u.reports[currentMonth]?.projects?.length
+        }));
 
-    generateInsight();
-  }, [users, currentMonth]);
+        const res = await fetch('/api/ai-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data: payload })
+        });
+        const json = await res.json();
+        setAiSummary(json.summary);
+    } catch (e) {
+        console.error(e);
+        setAiSummary("Could not generate insight at this time.");
+    } finally {
+        setIsAnalysing(false);
+    }
+  };
 
   // Find users with history
   const kevin = users.find(u => u.name === 'Kevin');
@@ -78,16 +79,49 @@ export default function AnalyticsTab({ currentMonth, users }: AnalyticsTabProps)
         <div className="absolute top-0 right-0 p-4 opacity-10">
            <TrendingUp className="w-24 h-24 text-green-500" />
         </div>
-        <div className="relative z-10">
-          <h3 className="text-sm font-bold uppercase tracking-wider text-green-700 mb-2 flex items-center">
+        <div className="relative z-10 w-full">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-green-700 mb-4 flex items-center">
              <span className="mr-2 text-lg">🚀</span> AI Monthly Insight
           </h3>
-          <p className="text-slate-700 text-lg font-medium leading-relaxed max-w-4xl">
-             <span className="font-bold text-slate-900">Exceptional performance across the board!</span> 
-             Revenue is consistent (+13% MoM), and <span className="text-blue-600 font-bold mx-1">Web Traffic (Dion)</span> 
-             is exploding with the new campaigns. Indri has successfully turned around the pipeline with 
-             <span className="text-green-600 font-bold mx-1">strong positive growth</span> in deals closed. Design output from Iqbal & Syahrun is at an all-time high.
-          </p>
+          
+          {/* 1. Initial State: Button */}
+          {!aiSummary && !isAnalysing && (
+             <div className="flex flex-col items-center justify-center p-6 text-center">
+                <p className="text-slate-500 mb-4">
+                    Analyze team performance, revenue trends, and KPIs instantly with Gemini AI.
+                </p>
+                <button 
+                  onClick={handleGenerateSummary}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center transform hover:scale-105 active:scale-95"
+                >
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Generate AI Insight
+                </button>
+             </div>
+          )}
+
+          {/* 2. Loading State */}
+          {isAnalysing && (
+             <div className="flex flex-col items-center justify-center p-8 text-center text-indigo-600">
+                <Loader2 className="w-10 h-10 animate-spin mb-3" />
+                <p className="font-semibold animate-pulse">Analyzing team performance...</p>
+             </div>
+          )}
+
+          {/* 3. Result State */}
+          {aiSummary && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                 <p className="text-slate-700 text-lg font-medium leading-relaxed max-w-4xl whitespace-pre-line">
+                    {aiSummary}
+                 </p>
+                 <button 
+                   onClick={() => setAiSummary('')}
+                   className="mt-4 text-xs font-semibold text-slate-400 hover:text-indigo-600 underline"
+                 >
+                    Regenerate
+                 </button>
+              </div>
+          )}
         </div>
       </div>
 
