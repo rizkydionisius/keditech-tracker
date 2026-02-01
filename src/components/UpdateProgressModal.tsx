@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertTriangle, AlertCircle, Calendar, BarChart2, Loader2 } from 'lucide-react';
 import { supabase } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 
 interface UpdateProgressModalProps {
   isOpen: boolean;
@@ -121,14 +122,21 @@ export default function UpdateProgressModal({
         }
 
         // 4. Success Handling
-        alert("✅ Data Saved Successfully!");
+        toast.success("Progress Updated!", {
+            description: "Your project and KPI data have been saved to the database."
+        });
         onClose();
-        window.location.reload(); 
+        
+        setTimeout(() => {
+           window.location.reload(); 
+        }, 1500);
 
     } catch (err: any) {
         console.error("Full Save Error Object:", err);
         const msg = err instanceof Error ? err.message : JSON.stringify(err);
-        alert("Error Saving: " + msg);
+        toast.error("Update Failed", {
+            description: msg
+        });
         setError(msg);
     } finally {
         setLoading(false);
