@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const { data } = await req.json();
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
       You are an expert Business Intelligence Analyst for a company called Keditech.

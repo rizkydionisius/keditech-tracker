@@ -43,7 +43,7 @@ export default function UpdateProgressModal({
   const [status, setStatus] = useState('GREEN');
   const [narrative, setNarrative] = useState('');
 
-  if (!isOpen) return null;
+
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null); // Added error state
@@ -77,37 +77,47 @@ export default function UpdateProgressModal({
             return;
         }
 
+        console.log("Found Member:", memberData);
+
         // 3. Insert Logic
+        if (!date) {
+            throw new Error("Date is required.");
+        }
+
         // Insert into projects
         if (project) {
             const { error: projectError } = await supabase
                 .from('projects')
                 .insert({
-                    member_id: memberData.id, // Use memberData.id, NOT auth user.id
-                    name: project,
+                    user_id: memberData.id,     // Schema: user_id
+                    project_name: project,      // Schema: project_name
                     status: status,
                     description: narrative,
-                    month: date.slice(0, 7)
+                    month_key: date.slice(0, 7) // Schema: month_key
                 });
             
-            if (projectError) throw projectError;
+            if (projectError) {
+                console.error("Project Insert Error:", projectError);
+                throw new Error("Project Insert Failed: " + (projectError.message || projectError.details));
+            }
         }
 
         // Insert into monthly_kpis
         if (kpiValue) {
-             // Assuming kpiLabel is also needed, handling based on previous context or requirements. 
-             // The prompt emphasizes "Insert into monthly_kpis if kpiValue is not empty".
              const { error: kpiError } = await supabase
                 .from('monthly_kpis')
                 .insert({
-                    member_id: memberData.id,
-                    month: date.slice(0, 7),
-                    kpi_reached: Number(kpiValue),
-                    kpi_target: Number(kpiValue) + 10, // Default/Mock logic from previous step
-                    note: kpiLabel || "Update" // Use label or default
+                    user_id: memberData.id,       // Schema: user_id
+                    month_key: date.slice(0, 7),  // Schema: month_key
+                    kpi_label: kpiLabel || "Metric", // Schema: kpi_label
+                    kpi_value: Number(kpiValue),  // Schema: kpi_value
+                    kpi_previous_value: Number(kpiPreviousValue) || 0 // Schema: kpi_previous_value
                 });
 
-             if (kpiError) throw kpiError;
+             if (kpiError) {
+                console.error("KPI Insert Error:", kpiError);
+                throw new Error("KPI Insert Failed: " + (kpiError.message || kpiError.details));
+             }
         }
 
         // 4. Success Handling
@@ -116,15 +126,18 @@ export default function UpdateProgressModal({
         window.location.reload(); 
 
     } catch (err: any) {
-        console.error(err);
-        alert("Error Saving: " + err.message);
-        setError(err.message);
+        console.error("Full Save Error Object:", err);
+        const msg = err instanceof Error ? err.message : JSON.stringify(err);
+        alert("Error Saving: " + msg);
+        setError(msg);
     } finally {
         setLoading(false);
     }
   };
 
   const isFormValid = project.trim().length > 0;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

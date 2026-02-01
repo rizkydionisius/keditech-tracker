@@ -61,30 +61,6 @@ export default function UserCard({ user, onViewDetails }: UserCardProps) {
   const displayedProjects = sortedProjects.slice(0, 3);
   const remainingCount = sortedProjects.length - 3;
 
-  // KPI Logic
-  const kpi = user.kpi;
-  let diff = 0;
-  let diffLabel = "";
-  let badgeClass = "";
-  let badgeIcon = null;
-
-  if (kpi) {
-    diff = kpi.value - kpi.previous_value;
-    if (diff > 0) {
-      diffLabel = `+${diff}`;
-      badgeClass = "bg-green-100 text-green-700";
-      badgeIcon = <ArrowUpRight className="w-3 h-3 mr-0.5" />;
-    } else if (diff < 0) {
-      diffLabel = `${diff}`;
-      badgeClass = "bg-red-100 text-red-700";
-      badgeIcon = <ArrowDownRight className="w-3 h-3 mr-0.5" />;
-    } else {
-      diffLabel = "No Change";
-      badgeClass = "bg-gray-100 text-gray-600";
-      badgeIcon = <Minus className="w-3 h-3 mr-0.5" />;
-    }
-  }
-
   return (
     <div className="bg-white shadow-md rounded-xl border border-gray-300 p-6 flex flex-col h-full hover:shadow-lg transition-all duration-300">
       {/* Header */}
@@ -103,25 +79,6 @@ export default function UserCard({ user, onViewDetails }: UserCardProps) {
           <MoreHorizontal className="w-5 h-5" />
         </button>
       </div>
-
-       {/* Performance Highlight */}
-       {kpi && (
-          <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-            <div className="flex items-end justify-between">
-              <div>
-                 <div className="text-3xl font-bold text-gray-900 leading-none">{kpi.value.toLocaleString('en-US')}</div>
-                 <div className="text-xs font-semibold text-gray-500 mt-1 uppercase tracking-wide">{kpi.label}</div>
-              </div>
-              <div className="flex flex-col items-end">
-                <div className={`flex items-center px-2 py-1 rounded-lg text-xs font-bold ${badgeClass}`}>
-                  {badgeIcon}
-                  {diffLabel}
-                </div>
-                <span className="text-[10px] text-gray-400 font-medium mt-1">vs last month</span>
-              </div>
-            </div>
-          </div>
-       )}
 
       {/* Body */}
       <div className="flex-1">
